@@ -40,41 +40,31 @@
 module Data.Symbol (
     Symbol(..),
     intern,
-    unintern
+    unintern,
   ) where
 
 import Control.Concurrent.MVar
-import Data.Generics (Data, Typeable)
 #if __GLASGOW_HASKELL__ >= 608
 import Data.String
 #endif /* __GLASGOW_HASKELL__ >= 608 */
-import qualified Data.Map as Map
+import qualified Data.Bimap as BM
 import System.IO.Unsafe (unsafePerformIO)
 
-data Symbol =  -- | Unique identifier and the string itself
-               Symbol {-# UNPACK #-} !Int !String
-#if defined(__GLASGOW_HASKELL__)
-  deriving (Data, Typeable)
-#endif /* defined(__GLASGOW_HASKELL__) */
+newtype Symbol = Symbol Int
 
 instance Eq Symbol where
-    (Symbol i1 _) == (Symbol i2 _) = i1 == i2
+    (Symbol i1) == (Symbol i2) = i1 == i2
 
 instance Ord Symbol where
-    compare (Symbol i1 _) (Symbol i2 _) = compare i1 i2
-
-#if __GLASGOW_HASKELL__ >= 608
-instance IsString Symbol where
-    fromString = intern
-#endif /* __GLASGOW_HASKELL__ >= 608 */
+    compare (Symbol i1) (Symbol i2) = compare i1 i2
 
 data SymbolEnv = SymbolEnv
     { uniq    :: {-# UNPACK #-} !Int
-    , symbols :: !(Map.Map String Symbol)
+    , symbols :: !(BM.Bimap String Int)
     }
 
 symbolEnv :: MVar SymbolEnv
-symbolEnv = unsafePerformIO $ newMVar $ SymbolEnv 1 Map.empty
+symbolEnv = unsafePerformIO $ newMVar $ SymbolEnv 1 BM.empty
 
 -- We @seq@ @s@ so that we can guarantee that when we perform the lookup we
 -- won't potentially have to evaluate a thunk that might itself call @intern@,
@@ -84,15 +74,15 @@ symbolEnv = unsafePerformIO $ newMVar $ SymbolEnv 1 Map.empty
 {-# NOINLINE intern #-}
 intern :: String -> Symbol
 intern s = s `seq` unsafePerformIO $ modifyMVar symbolEnv $ \env -> do
-    case Map.lookup s (symbols env) of
-      Nothing  -> do let sym  = Symbol (uniq env) s
+    case BM.lookup s (symbols env) of
+      Nothing  -> do let sym  = uniq env
                      let env' = env { uniq    = uniq env + 1,
-                                      symbols = Map.insert s sym
+                                      symbols = BM.insert s sym
                                                 (symbols env)
                                     }
-                     env' `seq` return (env', sym)
-      Just sym -> return (env, sym)
+                     env' `seq` return (env', Symbol sym)
+      Just sym -> return (env, Symbol sym)
 
 -- |Return the 'String' associated with a 'Symbol'.
 unintern :: Symbol -> String
-unintern (Symbol _ s) = s
+unintern (Symbol i) = (unsafePerformIO $ symbols `fmap` takeMVar symbolEnv) BM.!> i
