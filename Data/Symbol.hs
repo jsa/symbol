@@ -40,7 +40,7 @@
 module Data.Symbol (
     Symbol(..),
     intern,
-    unintern,
+    unintern
   ) where
 
 import Control.Concurrent.MVar
