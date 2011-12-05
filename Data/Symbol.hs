@@ -84,5 +84,6 @@ intern s = s `seq` unsafePerformIO $ modifyMVar symbolEnv $ \env -> do
       Just sym -> return (env, Symbol sym)
 
 -- |Return the 'String' associated with a 'Symbol'.
+{-# NOINLINE unintern #-}
 unintern :: Symbol -> String
-unintern (Symbol i) = (unsafePerformIO $ symbols `fmap` takeMVar symbolEnv) BM.!> i
+unintern (Symbol i) = unsafePerformIO $ withMVar symbolEnv $ \env -> return $ (symbols env) BM.!> i
