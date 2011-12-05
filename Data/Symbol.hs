@@ -86,4 +86,5 @@ intern s = s `seq` unsafePerformIO $ modifyMVar symbolEnv $ \env -> do
 -- |Return the 'String' associated with a 'Symbol'.
 {-# NOINLINE unintern #-}
 unintern :: Symbol -> String
-unintern (Symbol i) = unsafePerformIO $ withMVar symbolEnv $ \env -> return $ (symbols env) BM.!> i
+unintern (Symbol i) = unsafePerformIO $ withMVar symbolEnv $ \env -> let str = (symbols env) BM.!> i
+                                                                     in str `seq` return str
