@@ -38,12 +38,15 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Data.Symbol (
-    Symbol(..),
+    Symbol,
     intern,
-    unintern
+    intern',
+    unintern,
+    unintern'
   ) where
 
 import Control.Concurrent.MVar
+import Control.DeepSeq ( NFData, rnf )
 #if __GLASGOW_HASKELL__ >= 608
 import Data.String
 #endif /* __GLASGOW_HASKELL__ >= 608 */
@@ -57,6 +60,9 @@ instance Eq Symbol where
 
 instance Ord Symbol where
     compare (Symbol i1) (Symbol i2) = compare i1 i2
+
+instance NFData Symbol where
+  rnf (Symbol a) = rnf a
 
 data SymbolEnv = SymbolEnv
     { uniq    :: {-# UNPACK #-} !Int
@@ -83,8 +89,14 @@ intern s = s `seq` unsafePerformIO $ modifyMVar symbolEnv $ \env -> do
                      env' `seq` return (env', Symbol sym)
       Just sym -> return (env, Symbol sym)
 
+intern' :: String -> Int
+intern' s = let Symbol i = intern s in i
+
 -- |Return the 'String' associated with a 'Symbol'.
 {-# NOINLINE unintern #-}
+unintern' :: Int -> String
+unintern' i = unsafePerformIO $ withMVar symbolEnv $ \env -> let str = (symbols env) BM.!> i
+                                                             in str `seq` return str
+
 unintern :: Symbol -> String
-unintern (Symbol i) = unsafePerformIO $ withMVar symbolEnv $ \env -> let str = (symbols env) BM.!> i
-                                                                     in str `seq` return str
+unintern (Symbol i) = unintern' i

@@ -1,5 +1,5 @@
 name:           symbol-int
-version:        0.1.1.3
+version:        0.1.1.4
 cabal-version:  >= 1.6
 license:        BSD3
 license-file:   LICENSE
@@ -21,10 +21,15 @@ library
     Data.Symbol
 
   build-depends:
-    base >= 4 && < 5,
-    bimap >= 0.2.4,
-    containers >= 0.2 && < 0.5,
-    syb >= 0.1 && < 0.4
+--    base >= 4 && < 5,
+    base,
+--    bimap >= 0.2.4,
+    bimap,
+--    containers >= 0.2 && < 0.5,
+    containers,
+    deepseq,
+--    syb >= 0.1 && < 0.4
+    syb
 
 source-repository head
   type:     git
