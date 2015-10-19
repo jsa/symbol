@@ -26,7 +26,7 @@ library
 --    bimap >= 0.2.4,
     bimap,
 --    containers >= 0.2 && < 0.5,
-    containers,
+    containers >= 0.5,
     deepseq,
 --    syb >= 0.1 && < 0.4
     syb
